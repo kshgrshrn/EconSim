@@ -6,7 +6,9 @@ Built for learning, intuition, and exploration. Not for real-world forecasting.
 
 ⸻
 
-What It Does
+What It Does:
+
+
 	•	Simulates economic policies using deterministic, theory-based models
 	•	Shows directional impact on GDP, inflation, employment, revenue, and welfare
 	•	Visualizes supply–demand shifts and time-series trends
@@ -16,7 +18,8 @@ All simulations are transparent and reproducible.
 
 ⸻
 
-Supported Policies
+Supported Policies:
+
 	•	Tax: indirect, income, corporate, tariffs
 	•	Subsidy: consumer and producer
 	•	Price Controls: ceilings, floors, minimum wage
@@ -26,7 +29,8 @@ Markets include fuel, food, electronics, and agriculture with configurable elast
 
 ⸻
 
-How It Works
+How It Works:
+
 	1.	User selects a policy and parameters
 	2.	Deterministic simulation engine applies economic rules
 	3.	Macro indicators and market curves are generated
@@ -36,9 +40,10 @@ No external data. No probabilistic models.
 
 ⸻
 
-Tech Stack
+Tech Stack:
 
-Frontend
+Frontend:
+
 	•	React 18 + TypeScript
 	•	Vite
 	•	Tailwind CSS
@@ -46,21 +51,25 @@ Frontend
 	•	Recharts
 	•	React Hook Form + Zod
 
-Backend
+Backend:
+
 	•	Supabase Edge Functions (for explanations only)
 
 ⸻
 
-Use Cases
+Use Cases:
+
 	•	Learning economic concepts through interaction
 	•	Exploring policy trade-offs
 	•	Visualizing market responses to regulation
 
 ⸻
 
-Running Locally
+Running Locally:
+```
   npm install
-  npm run dev
+  npm run dev 
+```
 
 Simulations run fully in the browser.
 Explanation features require Supabase Edge Functions.
