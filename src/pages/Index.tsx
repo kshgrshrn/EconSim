@@ -31,7 +31,7 @@ const Index = () => {
       <Header onChatToggle={() => setIsChatOpen(!isChatOpen)} isChatOpen={isChatOpen} />
       
       <div className="flex flex-1 overflow-hidden">
-        <PolicySidebar onRunSimulation={handleRunSimulation} isLoading={isLoading} />
+        <PolicySidebar onRunSimulation={handleRunSimulation} isLoading={isLoading} simulationResult={result} />
         
         <main className="flex-1 overflow-auto p-6 space-y-6">
           <div>
@@ -80,7 +80,7 @@ const Index = () => {
           )}
         </main>
 
-        <ChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+        <ChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} simulationResult={result} />
       </div>
     </div>
   );

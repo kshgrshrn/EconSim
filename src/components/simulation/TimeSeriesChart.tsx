@@ -19,16 +19,17 @@ export function TimeSeriesChart({ data }: TimeSeriesChartProps) {
       <h3 className="font-semibold text-sm mb-4">Economic Indicators Over Time</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
               dataKey="period" 
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 10 }}
               stroke="hsl(var(--muted-foreground))"
-              label={{ value: 'Period', position: 'insideBottom', offset: -5, fontSize: 11 }}
+              label={{ value: 'Period', position: 'insideBottom', offset: -5, fontSize: 10 }}
             />
             <YAxis 
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 10 }}
+              width={40}
               stroke="hsl(var(--muted-foreground))"
             />
             <Tooltip 

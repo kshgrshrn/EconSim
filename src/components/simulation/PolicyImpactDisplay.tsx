@@ -1,4 +1,5 @@
-import { TrendingUp, TrendingDown, Minus, AlertCircle, CheckCircle, MinusCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertCircle, CheckCircle, MinusCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 import type { PolicyImpactResult, ImpactSection, ImpactLevel } from '@/types/simulation';
 
 interface PolicyImpactDisplayProps {
@@ -39,29 +40,57 @@ function getImpactColor(level: ImpactLevel): string {
   }
 }
 
+function getImpactBackground(level: ImpactLevel): string {
+  switch (level) {
+    case 'strong_positive':
+      return 'bg-emerald-500/10 border-l-2 border-emerald-500';
+    case 'positive':
+      return 'bg-emerald-500/5 border-l-2 border-emerald-400';
+    case 'neutral':
+      return 'bg-muted/30 border-l-2 border-muted-foreground';
+    case 'negative':
+      return 'bg-amber-500/10 border-l-2 border-amber-500';
+    case 'strong_negative':
+      return 'bg-red-500/10 border-l-2 border-red-500';
+    default:
+      return 'bg-muted/30';
+  }
+}
+
 function ImpactCard({ section }: { section: ImpactSection }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   return (
     <div className="bg-card border border-border p-4 flex flex-col h-full">
-      <h3 className="font-semibold text-sm mb-3 text-foreground">{section.title}</h3>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center justify-between mb-3 hover:opacity-70 transition-opacity"
+      >
+        <h3 className="font-semibold text-sm text-foreground">{section.title}</h3>
+        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
       
-      <ul className="space-y-2 flex-1 mb-4">
-        {section.items.map((item, index) => (
-          <li key={index} className="flex items-start gap-2">
-            <span className="mt-0.5 flex-shrink-0">
-              {getImpactIcon(item.level)}
-            </span>
-            <span className={`text-sm ${getImpactColor(item.level)}`}>
-              {item.effect}
-            </span>
-          </li>
-        ))}
-      </ul>
-      
-      <div className="mt-auto pt-3 border-t border-border">
-        <p className="text-xs text-muted-foreground italic">
-          {section.recommendation}
-        </p>
-      </div>
+      {isExpanded && (
+        <>
+          <ul className="space-y-2 flex-1 mb-4">
+            {section.items.map((item, index) => (
+              <li key={index} className={`flex items-start gap-2 px-3 py-2 rounded ${getImpactBackground(item.level)}`}>
+                <span className="mt-0.5 flex-shrink-0">
+                  {getImpactIcon(item.level)}
+                </span>
+                <span className={`text-sm ${getImpactColor(item.level)} break-words`}>
+                  {item.effect}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-auto pt-3 border-t border-border">
+            <p className="text-xs text-muted-foreground italic">
+              {section.recommendation}
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }

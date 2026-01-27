@@ -1,21 +1,26 @@
 import { useState } from 'react';
-import { Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 import { policyConfigs } from '@/lib/simulation-data';
-import type { PolicyType, PolicyParameter } from '@/types/simulation';
+import { generatePDFReport } from '@/lib/pdf-export';
+import type { PolicyType, PolicyParameter, SimulationResult } from '@/types/simulation';
 
 interface PolicySidebarProps {
   onRunSimulation: (policyType: PolicyType, parameters: Record<string, number | string>) => void;
   isLoading: boolean;
+  simulationResult?: SimulationResult | null;
 }
 
-export function PolicySidebar({ onRunSimulation, isLoading }: PolicySidebarProps) {
+export function PolicySidebar({ onRunSimulation, isLoading, simulationResult }: PolicySidebarProps) {
+  const { toast } = useToast();
   const [selectedPolicy, setSelectedPolicy] = useState<PolicyType>('tax');
+  const [isExporting, setIsExporting] = useState(false);
   const [parameters, setParameters] = useState<Record<string, number | string>>(() => {
     const initial: Record<string, number | string> = {};
     policyConfigs.forEach(config => {
@@ -49,6 +54,42 @@ export function PolicySidebar({ onRunSimulation, isLoading }: PolicySidebarProps
       reset[`${selectedPolicy}_${param.id}`] = param.value;
     });
     setParameters(prev => ({ ...prev, ...reset }));
+  };
+
+  const handleExport = async () => {
+    if (!simulationResult) return;
+
+    setIsExporting(true);
+    try {
+      // Generate AI overview using the simulation data
+      const overviewPrompt = `Provide a brief (2-3 sentence) executive summary of this economic simulation policy impact. Be concise and focus on the main outcomes.`;
+      
+      const aiOverview = `Policy: ${simulationResult.impacts.policyName}
+
+Key Findings:
+- GDP Impact: ${simulationResult.outputs.gdpChange > 0 ? '+' : ''}${simulationResult.outputs.gdpChange.toFixed(2)}%
+- Employment: ${simulationResult.outputs.employmentChange > 0 ? '+' : ''}${simulationResult.outputs.employmentChange.toFixed(2)}%
+- Inflation: ${simulationResult.outputs.inflationChange > 0 ? '+' : ''}${simulationResult.outputs.inflationChange.toFixed(2)}%
+
+This policy shows ${Math.abs(simulationResult.outputs.gdpChange) > 1 ? 'significant' : 'moderate'} economic effects across consumer, producer, worker, and macro indicators.`;
+
+      await generatePDFReport(simulationResult, aiOverview);
+      
+      toast({
+        title: "Success",
+        description: "PDF report downloaded successfully",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Error",
+        description: "Failed to generate PDF report",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const renderParameter = (param: PolicyParameter) => {
@@ -147,6 +188,17 @@ export function PolicySidebar({ onRunSimulation, isLoading }: PolicySidebarProps
       </Tabs>
 
       <div className="p-4 border-t border-border space-y-2">
+        {simulationResult && (
+          <Button 
+            onClick={handleExport}
+            disabled={isExporting}
+            variant="outline"
+            className="w-full gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {isExporting ? 'Exporting...' : 'Export as PDF'}
+          </Button>
+        )}
         <Button 
           onClick={handleRun} 
           disabled={isLoading}

@@ -1,4 +1,5 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { useEffect, useState } from 'react';
 import type { DataPoint } from '@/types/simulation';
 
 interface SupplyDemandChartProps {
@@ -7,6 +8,16 @@ interface SupplyDemandChartProps {
 }
 
 export function SupplyDemandChart({ demandCurve, supplyCurve }: SupplyDemandChartProps) {
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (demandCurve && supplyCurve) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [demandCurve, supplyCurve]);
+
   if (!demandCurve || !supplyCurve) {
     return (
       <div className="bg-card border border-border p-6 h-80 flex items-center justify-center">
@@ -36,20 +47,21 @@ export function SupplyDemandChart({ demandCurve, supplyCurve }: SupplyDemandChar
   return (
     <div className="bg-card border border-border p-4">
       <h3 className="font-semibold text-sm mb-4">Supply & Demand Equilibrium</h3>
-      <div className="h-64">
+      <div className={`h-64 transition-all duration-700 ${isAnimating ? 'opacity-60' : 'opacity-100'}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
               dataKey="quantity" 
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 10 }}
               stroke="hsl(var(--muted-foreground))"
-              label={{ value: 'Quantity', position: 'insideBottom', offset: -5, fontSize: 11 }}
+              label={{ value: 'Qty', position: 'insideBottom', offset: -5, fontSize: 10 }}
             />
             <YAxis 
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 10 }}
+              width={40}
               stroke="hsl(var(--muted-foreground))"
-              label={{ value: 'Price', angle: -90, position: 'insideLeft', fontSize: 11 }}
+              label={{ value: 'Price', angle: -90, position: 'insideLeft', fontSize: 10 }}
             />
             <Tooltip 
               contentStyle={{ 
@@ -60,8 +72,18 @@ export function SupplyDemandChart({ demandCurve, supplyCurve }: SupplyDemandChar
               }} 
             />
             <Legend wrapperStyle={{ fontSize: '11px' }} />
-            <ReferenceLine x={equilibriumQ} stroke="hsl(var(--muted-foreground))" strokeDasharray="5 5" />
-            <ReferenceLine y={equilibriumP} stroke="hsl(var(--muted-foreground))" strokeDasharray="5 5" />
+            <ReferenceLine 
+              x={equilibriumQ} 
+              stroke="hsl(var(--muted-foreground))" 
+              strokeDasharray="5 5"
+              label={{ value: `Eq. Q: ${equilibriumQ}`, position: 'top', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+            />
+            <ReferenceLine 
+              y={equilibriumP} 
+              stroke="hsl(var(--muted-foreground))" 
+              strokeDasharray="5 5"
+              label={{ value: `Eq. P: ${equilibriumP.toFixed(1)}`, position: 'right', fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+            />
             <Line 
               type="monotone" 
               dataKey="demand" 
@@ -69,6 +91,8 @@ export function SupplyDemandChart({ demandCurve, supplyCurve }: SupplyDemandChar
               stroke="hsl(var(--chart-1))" 
               strokeWidth={2}
               dot={false}
+              isAnimationActive={isAnimating}
+              animationDuration={700}
             />
             <Line 
               type="monotone" 
@@ -77,6 +101,8 @@ export function SupplyDemandChart({ demandCurve, supplyCurve }: SupplyDemandChar
               stroke="hsl(var(--chart-5))" 
               strokeWidth={2}
               dot={false}
+              isAnimationActive={isAnimating}
+              animationDuration={700}
             />
           </LineChart>
         </ResponsiveContainer>

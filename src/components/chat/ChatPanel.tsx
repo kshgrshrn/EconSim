@@ -4,35 +4,74 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage } from '@/types/simulation';
+import { generateQuickQuestions } from '@/lib/quick-questions';
+import type { ChatMessage, SimulationResult } from '@/types/simulation';
 
 interface ChatPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  simulationResult?: SimulationResult | null;
 }
 
 type Message = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/policy-chat`;
 
+// Parse markdown bold syntax (**text**) and render as JSX
+function renderMarkdownContent(content: string) {
+  const parts = content.split(/(\*\*[^*]+\*\*)/g);
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      const text = part.slice(2, -2);
+      return <strong key={index}>{text}</strong>;
+    }
+    return part;
+  });
+}
+
 async function streamChat({
   messages,
+  simulationData,
   onDelta,
   onDone,
   onError,
 }: {
   messages: Message[];
+  simulationData?: SimulationResult | null;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
 }) {
+  // Prepare system message with simulation context
+  const systemMessage = simulationData 
+    ? {
+        role: "system" as const,
+        content: `You are an AI policy advisor helping users understand economic simulations. You have access to the current simulation results.
+
+CURRENT SIMULATION DATA:
+${JSON.stringify(simulationData, null, 2)}
+
+When answering questions:
+1. Reference specific values from the simulation data
+2. Explain the economic mechanisms behind the results
+3. Be clear and educational in your explanations
+4. Connect results to economic theory (supply/demand, elasticity, etc.)
+5. Answer follow-up questions about the simulation scenario`,
+      }
+    : null;
+
+  const messagesToSend = systemMessage 
+    ? [systemMessage as Message, ...messages]
+    : messages;
+
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages: messagesToSend }),
   });
 
   if (!resp.ok) {
@@ -102,19 +141,31 @@ async function streamChat({
   onDone();
 }
 
-export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
+export function ChatPanel({ isOpen, onClose, simulationResult }: ChatPanelProps) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I\'m your AI policy advisor. Ask me about tax effects, trade implications, subsidy impacts, or price controls and I\'ll provide economic analysis.',
+      content: simulationResult 
+        ? 'Hello! I can see you have a simulation running. Ask me about the results, policy effects, or economic implications of your current scenario.'
+        : 'Hello! I\'m your AI policy advisor. Run a simulation first, then ask me about tax effects, trade implications, subsidy impacts, or price controls and I\'ll provide economic analysis.',
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [quickQuestions, setQuickQuestions] = useState(() => 
+    simulationResult ? generateQuickQuestions(simulationResult) : []
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Regenerate questions when simulation changes
+    if (simulationResult) {
+      setQuickQuestions(generateQuickQuestions(simulationResult));
+    }
+  }, [simulationResult?.id]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -168,6 +219,7 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
     try {
       await streamChat({
         messages: apiMessages,
+        simulationData: simulationResult,
         onDelta: upsertAssistant,
         onDone: () => setIsLoading(false),
         onError: (error) => {
@@ -222,7 +274,7 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
                     ? 'bg-muted/50 text-foreground' 
                     : 'bg-primary text-primary-foreground'
                 }`}>
-                  {message.content}
+                  {renderMarkdownContent(message.content)}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -247,7 +299,24 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-3">
+        {simulationResult && input.trim() === '' && quickQuestions.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-medium">Quick questions:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {quickQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  onClick={() => setInput(question.prompt)}
+                  className="text-xs bg-muted hover:bg-muted/80 text-muted-foreground px-2 py-1.5 rounded transition-colors text-left line-clamp-2"
+                  title={question.prompt}
+                >
+                  {question.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
           <Input
             value={input}
